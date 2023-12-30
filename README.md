@@ -5,7 +5,7 @@ which prevents [cache stampedes](https://en.wikipedia.org/wiki/Cache_stampede).
 
 # Usage
 
-```
+```go
 import "github.com/skaji/go-cache"
 
 c := cache.New[string, int]()

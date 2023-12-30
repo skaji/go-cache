@@ -8,7 +8,7 @@ import (
 type data[V any] struct {
 	value V
 	error error
-	done  <-chan struct{}
+	ready chan struct{}
 }
 
 type Cache[K comparable, V any] struct {
@@ -24,18 +24,15 @@ func (c *Cache[K, V]) Compute(ctx context.Context, key K, fn func(context.Contex
 	c.mu.Lock()
 	if d, ok := c.cache[key]; ok {
 		c.mu.Unlock()
-		<-d.done
+		<-d.ready
 		return d.value, d.error
 	}
 
-	done := make(chan struct{})
-	d := &data[V]{done: done}
+	d := &data[V]{ready: make(chan struct{})}
 	c.cache[key] = d
 	c.mu.Unlock()
 
-	v, err := fn(ctx, key)
-	d.value = v
-	d.error = err
-	close(done)
-	return v, err
+	d.value, d.error = fn(ctx, key)
+	close(d.ready)
+	return d.value, d.error
 }
